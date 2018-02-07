@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:security="http://www.springframework.org/schema/security"
+xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/security
+http://www.springframework.org/schema/security/spring-security.xsd">
+	
+	<security:global-method-security secured-annotations="enabled"/>
+
+	<security:http auto-config="false" use-expressions="true" entry-point-ref="loginUrlAuthenticationEntryPoint">
+ 		<security:access-denied-handler error-page="/403" />
+ 		
+ 		<!-- <security:intercept-url pattern="/" access="permitAll" /> -->
+ 		<security:intercept-url pattern="/resources/**" access="permitAll" />
+ 		<security:intercept-url pattern="/getActiveServices" access="hasAnyRole('ROLE_PATIENT', 'ROLE_PROFESSIONAL', 'ROLE_ADMIN')" />
+ 		
+ 		<!-- ADMIN -->
+ 		<security:intercept-url pattern="/registerService" access="hasRole('ROLE_ADMIN')" />
+ 		<security:intercept-url pattern="/getServices" access="hasRole('ROLE_ADMIN')" />
+ 		<security:intercept-url pattern="/setInactiveService" access="hasRole('ROLE_ADMIN')" />
+ 		<security:intercept-url pattern="/setActiveService" access="hasRole('ROLE_ADMIN')" />
+ 		<security:intercept-url pattern="/editService" access="hasRole('ROLE_ADMIN')" />
+ 		<security:intercept-url pattern="/manager" access="hasRole('ROLE_ADMIN')" />
+ 		
+ 		<!-- PATIENT -->
+ 		<security:intercept-url pattern="/patient" access="hasRole('ROLE_PATIENT')" />
+ 		
+ 		<!-- PROFESSIONAL -->
+ 		<security:intercept-url pattern="/professional" access="hasRole('ROLE_PROFESSIONAL')" />
+ 		
+		<security:logout logout-success-url="/" invalidate-session="true"/>
+		
+		<security:custom-filter position="FORM_LOGIN_FILTER" ref="ldapAuthenticationFilter" />
+		
+		<security:session-management>
+			<security:concurrency-control max-sessions="1" expired-url="/"/>
+		</security:session-management>
+	</security:http>
+	
+	<bean id="loginUrlAuthenticationEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+ 		<property name="loginFormUrl" value="/"/>
+	</bean>
+	
+	<bean id="ldapAuthenticationFilter" class="br.ufc.petsi.filter.LdapAuthenticationFilter" >
+		<property name="authenticationManager" ref="authenticationManager"/>
+		<property name="authenticationFailureHandler" ref="failureHandler"/>
+		<property name="authenticationSuccessHandler" ref="successHandler"/>
+	</bean>
+	
+	<bean id="successHandler" class="org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler">
+		<property name="defaultTargetUrl" value="/authentication/success"/>
+	</bean>
+	
+	<bean id="failureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+		<property name="defaultFailureUrl" value="/failureLogin"/>
+	</bean>
+	
+	<bean id="ldapAuthenticationProvider" class="br.ufc.petsi.security.LdapAuthenticationProvider"></bean>
+
+	<security:authentication-manager alias="authenticationManager">
+		<!-- Nosso provedor -->
+		<security:authentication-provider ref="ldapAuthenticationProvider" />
+	</security:authentication-manager>
+	
+</beans>
